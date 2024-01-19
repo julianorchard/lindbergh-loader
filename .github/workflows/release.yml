@@ -1,0 +1,27 @@
+name: Lindbergh Loader Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Build Docker image and output
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          outputs: type=local,dest=build
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build
