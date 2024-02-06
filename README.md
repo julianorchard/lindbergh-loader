@@ -8,9 +8,7 @@ You can view the supported titles [here](docs/supported.md).
 
 ## Usage
 
-**Lindbergh games expect full control of the Linux OS. With root privileges it is possible that they could cause damage to your computer.**
-
-This emulator will need access to the input devices and serial devices on Linux. Before running this emulator you should add your user account to the following groups and then **restart your computer**:
+Lindbergh games expect full control of the Linux OS (specifically, this emulator will need access to the input devices and serial devices on Linux). **With root privileges it is possible that they could cause damage to your computer.** Therefore before running this emulator you should add your user account to the following groups and then restart your computer:
 
 ```
 sudo usermod -a -G dialout,input $USER
