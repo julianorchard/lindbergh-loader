@@ -136,7 +136,6 @@ static void handleSegfault(int signal, siginfo_t *info, void *ptr)
 
 void __attribute__((constructor)) hook_init()
 {
-    printf("SEGA Lindbergh Loader\nRobert Dilley 2023\nNot for public consumption\n\n");
 
     // Get offsets of the Game's ELF and calculate CRC32.
     dl_iterate_phdr(callback, NULL);
@@ -184,15 +183,11 @@ void __attribute__((constructor)) hook_init()
 
     securityBoardSetDipResolution(getConfig()->width, getConfig()->height);
 
-    printf("Now starting \"%s\"", getGameName());
-    if (getConfig()->gameStatus == WORKING)
-    {
-        printf((", this game is working.\n"));
-    }
-    else
-    {
-        printf((", this game is NOT working.\n"));
-    }
+    printf("\nSEGA Lindbergh Emulator\nRobert Dilley 2023\n\n");
+    printf("  GAME:       %s\n", getGameName());
+    printf("  GAME ID:    %s\n", getGameID());
+    printf("  DVP:        %s\n", getDVPName());
+    printf("  STATUS:     %s\n", getConfig()->gameStatus == WORKING ? "WORKING" : "NOT WORKING");
 }
 
 int open(const char *pathname, int flags)
@@ -215,6 +210,9 @@ int open(const char *pathname, int flags)
 
     if (strcmp(pathname, "/dev/ttyS0") == 0 || strcmp(pathname, "/dev/tts/0") == 0)
     {
+        if (getConfig()->emulateDriveboard == 0 && getConfig()->emulateRideboard == 0)
+            return _open(getConfig()->serial1Path, flags);
+
         if (hooks[SERIAL0] != -1)
             return -1;
 
@@ -225,6 +223,9 @@ int open(const char *pathname, int flags)
 
     if (strcmp(pathname, "/dev/ttyS1") == 0 || strcmp(pathname, "/dev/tts/1") == 0)
     {
+        if (getConfig()->emulateMotionboard == 0)
+            return _open(getConfig()->serial2Path, flags);
+
         if (hooks[SERIAL1] != -1)
             return -1;
 
@@ -305,16 +306,16 @@ FILE *fopen(const char *restrict pathname, const char *restrict mode)
         return fileHooks[PCI_CARD_1F0];
     }
 
-    char* result;
-    if((result = strstr(pathname, "/home/disk0")) != NULL)
+    char *result;
+    if ((result = strstr(pathname, "/home/disk0")) != NULL)
     {
         memmove(result + 2, result + 11, strlen(result + 11) + 1);
         memcpy(result, "..", 2);
         return _fopen(result, mode);
     }
 
-    //printf("Path= %s\n", pathname); 
-    
+    // printf("Path= %s\n", pathname);
+
     return _fopen(pathname, mode);
 }
 
@@ -326,7 +327,6 @@ FILE *fopen64(const char *pathname, const char *mode)
     if (strcmp(pathname, "/proc/sys/kernel/osrelease") == 0)
     {
         EmulatorConfig *config = getConfig();
-        config->game = SEGABOOT_2_6;
         fileRead[OSRELEASE] = 0;
         fileHooks[OSRELEASE] = _fopen64(HOOK_FILE_NAME, mode);
         return fileHooks[OSRELEASE];
@@ -471,8 +471,8 @@ size_t fread(void *buf, size_t size, size_t count, FILE *stream)
 
     if (stream == fileHooks[PCI_CARD_1F0])
     {
-        memcpy(buf, pci_1f0, size*count);
-        return size*count;
+        memcpy(buf, pci_1f0, size * count);
+        return size * count;
     }
     return _fread(buf, size, count, stream);
 }
@@ -512,7 +512,7 @@ int ioctl(int fd, unsigned int request, void *data)
 
     if (fd == hooks[EEPROM])
     {
-        if(request == 0xC04064A0)
+        if (request == 0xC04064A0)
             return _ioctl(fd, request, data);
         return eepromIoctl(fd, request, data);
     }
@@ -629,7 +629,7 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
     struct sockaddr_in *in_pointer = (struct sockaddr_in *)addr;
 
-    // Change the IP to connect to to 127.0.0.1
+    // Change the IP to connect to 127.0.0.1
     // in_pointer->sin_addr.s_addr = inet_addr("127.0.0.1");
     char *some_addr = inet_ntoa(in_pointer->sin_addr);
     if (getConfig()->showDebugMessages)
@@ -708,8 +708,8 @@ char *getenv(const char *name)
 {
     char *(*_getenv)(const char *name) = dlsym(RTLD_NEXT, "getenv");
 
-    if ((strcmp(name, "TEA_DIR") == 0) && ((getConfig()->game == VIRTUA_TENNIS_3) || (getConfig()->game == VIRTUA_TENNIS_3_TEST) ||
-                                           ((getConfig()->game == RAMBO)) || (getConfig()->game == TOO_SPICY)))
+    if ((strcmp(name, "TEA_DIR") == 0) && ((getConfig()->crc32 == VIRTUA_TENNIS_3) || (getConfig()->crc32 == VIRTUA_TENNIS_3_TEST) ||
+                                           ((getConfig()->crc32 == RAMBO)) || (getConfig()->crc32 == TOO_SPICY)))
     {
         if (getcwd(envpath, 100) == NULL)
             return "";
