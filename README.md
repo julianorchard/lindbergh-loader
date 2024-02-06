@@ -1,14 +1,68 @@
 # SEGA Lindbergh Emulator
 
-This project emulates the SEGA Lindbergh, allowing games to run on modern Linux computers with an NVIDIA graphics card to be used as replacement hardware for broken Lindbergh systems in physical arcade machines.
+[![Lindbergh Loader CI](https://github.com/bobbydilley/lindbergh-loader/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bobbydilley/lindbergh-loader/actions/workflows/ci.yml)
 
-You can view the supported titles [here.](docs/supported.md)
+This project emulates the [SEGA Lindbergh](https://www.system16.com/hardware.php?id=731), allowing games to run on modern Linux computers with an NVIDIA graphics card to be used as replacement hardware for broken Lindbergh systems in physical arcade machines.
 
-## Dependencies
+You can view the supported titles [here](docs/supported.md).
 
-First make sure you have up-to-date NVIDIA drivers and then install the following:
+## Usage
+
+**Lindbergh games expect full control of the Linux OS. With root privileges it is possible that they could cause damage to your computer.**
+
+This emulator will need access to the input devices and serial devices on Linux. Before running this emulator you should add your user account to the following groups and then **restart your computer**:
 
 ```
+sudo usermod -a -G dialout,input $USER
+```
+
+Additionally, please ensure your NVIDIA drivers are up-to-date before proceeding.
+
+### Running
+
+A `lindbergh` executable ([download a release](https://github.com/bobbydilley/lindbergh-loader/releases) or [build](#build)) is provided to easily run the games. Place it in the same directory as the game elf, and run `./lindbergh` to automatically start the game with the correct environment variables set, or run `./lindbergh -t` for test mode.
+
+For example, copy the binaries into your game directory:
+
+```sh
+cp build/* ~/the-house-of-the-dead-4/disk0/elf/.
+cd ~/the-house-of-the-dead-4/disk0/elf
+```
+
+Then run:
+
+```sh
+LD_PRELOAD=lindbergh.so LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. ./hod4M.elf
+```
+
+Some games will require the extra libraries like `libposixtime.so`, which can be found in dumps of the Lindbergh CF image.
+
+### Configuring
+
+A default configuration file is provided in `docs/lindbergh.conf`. It should be placed in the same folder the game is run from. If no config file is present, the default setting will be used.
+
+Currently, the default controls are set up for [The House of the Dead 4](https://en.wikipedia.org/wiki/The_House_of_the_Dead_4):
+
+| Key           | Mapping        |
+|---------------|----------------|
+| `t`           | Test           |
+| `s`           | Service        |
+| `5`           | Coin 1         |
+| `1`           | Player 1 Start |
+| `Right Click` | Reload         |
+| `Left Click`  | Shoot          |
+
+## Build
+
+You can either use GNU Make to build the binaries locally, use Docker, or simply download a [recent release](https://github.com/bobbydilley/lindbergh-loader/releases) directly from this repository.
+
+Building this project has been tested to work on Ubuntu 22.04 and doesn't currently work on Ubuntu 23.10. Multiple packages such as `freeglut3:i386` are not available anymore on Debian Trixxie or Ubuntu 23.10.
+
+### With Make
+
+First, install the prerequisite dependencies below:
+
+```sh
 sudo dpkg --add-architecture i386
 sudo apt update
 sudo apt install gcc-multilib
@@ -23,45 +77,23 @@ sudo apt install libxmu6:i386
 sudo apt install libstdc++5:i386
 ```
 
-Note: The project has been tested to work on Ubuntu 22.04, and doesn't currently work on Ubuntu 23.10. Multiple packages such as `freeglut3:i386` are not available anymore on Debian Trixxie or Ubuntu 23.10.
+Use `make` from within the root of this repository to build. Binaries are output to a `build` directory.
 
-## Building & Running
+### With Docker
 
-This emulator will need access to the input devices and serial devices on Linux. Before running this emulator you should add your user account to the following groups and then _restart your computer_.
+We use [`debian:bullseye`](https://hub.docker.com/_/debian) as our base image. With Docker installed, run (from the root of this repository):
 
-```
-sudo usermod -a -G dialout,input $USER
-```
-
-To build, run the makefile, and then copy the contents of the build directory into the game directory and run.
-
-```
-make
-cp build/* ~/the-house-of-the-dead-4/disk0/elf/.
-cd ~/the-house-of-the-dead-4/disk0/elf
-LD_PRELOAD=lindbergh.so LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. ./hod4M.elf
+```sh
+docker build . -t lindbergh-loader --output=build
 ```
 
-Some games will require extra libraries like `libposixtime.so`, which can be found in dumps of the Lindbergh CF image.
+This will also output the executables to a `build` directory.
 
-A default configuration file is provided in `docs/lindbergh.conf`. It should be placed in the same folder the game is run from. If no config file is present a default setting will be used.
+## License
 
-Do not run this as root, instead use the usergroups for input/dialout to give the emulator access to what it needs. Lindbergh games expect full control of the Linux OS and with root privilages it is possible that they could cause damage to your computer.
-
-A `lindbergh` executable is provided in the build directory to easily run the games. Place it in the same directory as the game elf, and run `./lindbergh` to automatically start the game with the correct environment variables set, or run `./lindbergh -t` for test mode.
-
-## Controls
-
-Currently the controls are set up for The House of the Dead 4.
-
-| Key         | Mapping        |
-|-------------|----------------|
-| t           | Test           |
-| s           | Service        |
-| 5           | Coin 1         |
-| 1           | Player 1 Start |
-| Right Click | Reload         |
-| Left Click  | Shoot          |
+The content of this repository is available under the GPLv3 Public License.
+Please see the [LICENSE](/LICENSE) file in the root of this repository for more
+information.
 
 ## Thanks
 
